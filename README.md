@@ -7,3 +7,11 @@ A term project for Advanced Database System (CSCI-GA.2434-001) in New York Unive
 
 ## Programming Language
 C++
+
+## Algorithm
+
+## Major Module
+
+## Testing Scripts
+
+
