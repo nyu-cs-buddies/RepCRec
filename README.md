@@ -11,9 +11,9 @@ C++
 ## Algorithm
 
 ## Major Module
-# Transaction Manager
-# Lock Manager
-# Site
+* Transaction Manager
+* Lock Manager
+* Site
 
 ## Testing Scripts
 
