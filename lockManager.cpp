@@ -4,8 +4,6 @@
 #include <list>
 
 
-
-
 using namespace std;
 
 class ReadLock {
