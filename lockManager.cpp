@@ -13,7 +13,6 @@ class ReadLock {
         }
 };
 
-
 class WriteLock {
     public:
         bool isShared;
