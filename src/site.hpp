@@ -2,7 +2,7 @@
 #include <iostream>
 #include <map>
 #include <unordered_set>
-#include "lockManager.h"
+#include "lockManager.hpp"
 using namespace std;
 
 using Index = int;

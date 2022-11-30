@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "operation.hpp"
-#include "site.h"
+#include "site.hpp"
 #include "transaction.hpp"
 
 class TransactionManager {
