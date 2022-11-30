@@ -43,4 +43,4 @@ class Site {
     friend ostream& operator<<(ostream& os, const SiteStatus& siteSatus);
 };
 
-ostream& operator<<(ostream& os, const SiteStatus& siteSatus); 
+ostream& operator<<(ostream& os, const SiteStatus& siteSatus);

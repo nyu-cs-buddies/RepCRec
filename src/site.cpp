@@ -1,6 +1,7 @@
+#include "site.hpp"
+
 #include <iostream>
 #include <string>
-#include "site.hpp"
 using namespace std;
 
 Site::Site(const int id) : id(id), siteStatus(SiteStatus::UP) { initialize(); }
@@ -19,7 +20,8 @@ void Site::initialize() {
     }
 }
 
-bool Site::read(const int transactionId, const int idx, int& lockHolder, int& readVal) {
+bool Site::read(const int transactionId, const int idx, int& lockHolder,
+                int& readVal) {
     if (siteStatus == SiteStatus::DOWN || !commitedVal.count(idx)) {
         // site is down or variable does not exit on this site
         return false;
@@ -37,14 +39,15 @@ bool Site::read(const int transactionId, const int idx, int& lockHolder, int& re
     return true;
 }
 
-bool Site::write(const int transactionId, const int idx, const int varVal, unordered_set<int>& lockHolders) {
+bool Site::write(const int transactionId, const int idx, const int varVal,
+                 unordered_set<int>& lockHolders) {
     if (siteStatus == SiteStatus::DOWN || !commitedVal.count(idx)) {
         // site is down or variable does not exit on this site
         return false;
     }
 
     if (restrictedWriteVariable.count(idx)) {
-        return false;  
+        return false;
     }
 
     // request a WLock for write variable
@@ -65,7 +68,6 @@ bool Site::write(const int transactionId, const int idx, const int varVal, unord
     return false;
 }
 
-
 void Site::abort(const int transactionId) {
     auto modifiedVar = lockManager.releaseLock(transactionId);
     for (const auto& var : modifiedVar) {
@@ -75,14 +77,15 @@ void Site::abort(const int transactionId) {
     return;
 }
 
-void Site::commit(const int transactionId, const unordered_set<int>& affectedVariables) {
+void Site::commit(const int transactionId,
+                  const unordered_set<int>& affectedVariables) {
     lockManager.releaseLock(transactionId);
     for (const auto& affectedVar : affectedVariables) {
         if (curVal.count(affectedVar)) {
             commitedVal[affectedVar] = curVal[affectedVar];
             curVal.erase(affectedVar);
-            // if the site just recovered, we need to clean up restrictedReadVariable
-            // to make it readable
+            // if the site just recovered, we need to clean up
+            // restrictedReadVariable to make it readable
             restrictedReadVariable.erase(affectedVar);
         }
         restrictedWriteVariable.erase(affectedVar);
