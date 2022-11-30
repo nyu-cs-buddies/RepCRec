@@ -5,6 +5,20 @@ using namespace std;
 
 Site::Site(const int id) : id(id), siteStatus(SiteStatus::UP) { initialize(); }
 
+void Site::initialize() {
+    // save even indexed variables (replicated variables)
+    for (int i = 2; i <= 20; i += 2) {
+        commitedVal[i] = 10 * i;
+    }
+
+    // save odd indexed variables (non-replicated variables)
+    for (int i = 1; i <= 19; i += 2) {
+        if (id == (i % 10) + 1) {
+            commitedVal[i] = 10 * i;
+        }
+    }
+}
+
 bool Site::read(const int transactionId, const int idx, int& lockHolder, int& readVal) {
     if (siteStatus == SiteStatus::DOWN || !commitedVal.count(idx)) {
         // site is down or variable does not exit on this site
@@ -130,16 +144,14 @@ void Site::dump() const {
     // cout << endl;
 }
 
-void Site::initialize() {
-    // save even indexed variables (replicated variables)
-    for (int i = 2; i <= 20; i += 2) {
-        commitedVal[i] = 10 * i;
+ostream& operator<<(ostream& os, const SiteStatus& siteSatus) {
+    switch (siteSatus) {
+        case SiteStatus::UP:
+            os << "UP";
+            break;
+        case SiteStatus::DOWN:
+            os << "DOWN";
+            break;
     }
-
-    // save odd indexed variables (non-replicated variables)
-    for (int i = 1; i <= 19; i += 2) {
-        if (id == (i % 10) + 1) {
-            commitedVal[i] = 10 * i;
-        }
-    }
+    return os;
 }
