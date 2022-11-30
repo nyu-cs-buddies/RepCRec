@@ -1,11 +1,27 @@
+#include "site.hpp"
+
 #include <iostream>
 #include <string>
-#include "site.hpp"
 using namespace std;
 
 Site::Site(const int id) : id(id), siteStatus(SiteStatus::UP) { initialize(); }
 
-bool Site::read(const int transactionId, const int idx, int& lockHolder, int& readVal) {
+void Site::initialize() {
+    // save even indexed variables (replicated variables)
+    for (int i = 2; i <= 20; i += 2) {
+        commitedVal[i] = 10 * i;
+    }
+
+    // save odd indexed variables (non-replicated variables)
+    for (int i = 1; i <= 19; i += 2) {
+        if (id == (i % 10) + 1) {
+            commitedVal[i] = 10 * i;
+        }
+    }
+}
+
+bool Site::read(const int transactionId, const int idx, int& lockHolder,
+                int& readVal) {
     if (siteStatus == SiteStatus::DOWN || !commitedVal.count(idx)) {
         // site is down or variable does not exit on this site
         return false;
@@ -23,14 +39,15 @@ bool Site::read(const int transactionId, const int idx, int& lockHolder, int& re
     return true;
 }
 
-bool Site::write(const int transactionId, const int idx, const int varVal, unordered_set<int>& lockHolders) {
+bool Site::write(const int transactionId, const int idx, const int varVal,
+                 unordered_set<int>& lockHolders) {
     if (siteStatus == SiteStatus::DOWN || !commitedVal.count(idx)) {
         // site is down or variable does not exit on this site
         return false;
     }
 
     if (restrictedWriteVariable.count(idx)) {
-        return false;  
+        return false;
     }
 
     // request a WLock for write variable
@@ -51,7 +68,6 @@ bool Site::write(const int transactionId, const int idx, const int varVal, unord
     return false;
 }
 
-
 void Site::abort(const int transactionId) {
     auto modifiedVar = lockManager.releaseLock(transactionId);
     for (const auto& var : modifiedVar) {
@@ -61,14 +77,15 @@ void Site::abort(const int transactionId) {
     return;
 }
 
-void Site::commit(const int transactionId, const unordered_set<int>& affectedVariables) {
+void Site::commit(const int transactionId,
+                  const unordered_set<int>& affectedVariables) {
     lockManager.releaseLock(transactionId);
     for (const auto& affectedVar : affectedVariables) {
         if (curVal.count(affectedVar)) {
             commitedVal[affectedVar] = curVal[affectedVar];
             curVal.erase(affectedVar);
-            // if the site just recovered, we need to clean up restrictedReadVariable
-            // to make it readable
+            // if the site just recovered, we need to clean up
+            // restrictedReadVariable to make it readable
             restrictedReadVariable.erase(affectedVar);
         }
         restrictedWriteVariable.erase(affectedVar);
@@ -130,16 +147,14 @@ void Site::dump() const {
     // cout << endl;
 }
 
-void Site::initialize() {
-    // save even indexed variables (replicated variables)
-    for (int i = 2; i <= 20; i += 2) {
-        commitedVal[i] = 10 * i;
+ostream& operator<<(ostream& os, const SiteStatus& siteSatus) {
+    switch (siteSatus) {
+        case SiteStatus::UP:
+            os << "UP";
+            break;
+        case SiteStatus::DOWN:
+            os << "DOWN";
+            break;
     }
-
-    // save odd indexed variables (non-replicated variables)
-    for (int i = 1; i <= 19; i += 2) {
-        if (id == (i % 10) + 1) {
-            commitedVal[i] = 10 * i;
-        }
-    }
+    return os;
 }

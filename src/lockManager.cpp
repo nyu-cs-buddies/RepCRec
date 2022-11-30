@@ -1,15 +1,15 @@
-#include <iostream>
 #include "lockManager.hpp"
+
+#include <iostream>
 using namespace std;
 
-void LockManager::requestRLock(int transactionId, int varIdx, int& lockHolder){
+void LockManager::requestRLock(int transactionId, int varIdx, int& lockHolder) {
     // check whether a writelock on it
     if (!WLockTable.count(varIdx)) {
         // provide a RLock
         if (RLockTable.count(varIdx)) {
             RLockTable[varIdx].transactionIds.insert(transactionId);
-        } 
-        else {
+        } else {
             ReadLock readLock;
             readLock.transactionIds.insert(transactionId);
             RLockTable[varIdx] = readLock;
@@ -21,7 +21,8 @@ void LockManager::requestRLock(int transactionId, int varIdx, int& lockHolder){
     return;
 }
 
-void LockManager::requestWLock(const int transactionId, const int varIdx, unordered_set<int>& lockHolders){
+void LockManager::requestWLock(const int transactionId, const int varIdx,
+                               unordered_set<int>& lockHolders) {
     // check whether a readlock on it
     if (!RLockTable.count(varIdx) && !WLockTable.count(varIdx)) {
         // provide a WLock
@@ -40,9 +41,7 @@ void LockManager::requestWLock(const int transactionId, const int varIdx, unorde
     return;
 }
 
-
 void LockManager::promoteLock(const int transactionId, const int idx) {
-    
     RLockTable.erase(idx);
     WriteLock writeLock;
     writeLock.transactionId = transactionId;
@@ -89,7 +88,7 @@ void LockManager::dump() const {
     for (const auto& r : RLockTable) {
         cout << r.first << " : ";
         for (const auto& t : r.second.transactionIds) {
-        cout << t << " ";
+            cout << t << " ";
         }
         cout << " || ";
     }
@@ -101,5 +100,3 @@ void LockManager::dump() const {
     }
     cout << endl;
 }
-
-
