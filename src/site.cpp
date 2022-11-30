@@ -6,14 +6,14 @@ using namespace std;
 Site::Site(const int id) : id(id), siteStatus(SiteStatus::UP) { initialize(); }
 
 bool Site::read(const int transactionId, const int idx, int& lockHolder, int& readVal) {
+    // site is down or variable does not exit on this site
     if (siteStatus == SiteStatus::DOWN || !commitedVal.count(idx)) {
-        // site is down or variable does not exit on this site
         return false;
     }
 
+    // if the site just recovered, we can not read the replicated variables
+    // until they are commited
     if (idx % 2 == 0 && restrictedReadVariable.count(idx)) {
-        // if the site just recovered, we can not read the replicated variables
-        // until they are commited
         return false;
     }
 
@@ -24,8 +24,8 @@ bool Site::read(const int transactionId, const int idx, int& lockHolder, int& re
 }
 
 bool Site::write(const int transactionId, const int idx, const int varVal, unordered_set<int>& lockHolders) {
+    // site is down or variable does not exit on this site
     if (siteStatus == SiteStatus::DOWN || !commitedVal.count(idx)) {
-        // site is down or variable does not exit on this site
         return false;
     }
 
@@ -37,13 +37,15 @@ bool Site::write(const int transactionId, const int idx, const int varVal, unord
     lockManager.requestWLock(transactionId, idx, lockHolders);
 
     // if already has a read lock, RLock promotes to WLock
+
+    // promote RLock to WLock
     if (lockHolders.count(transactionId) && lockHolders.size() == 1) {
-        // promote RLock to WLock
         lockManager.promoteLock(transactionId, idx);
         lockHolders.clear();
     }
+
+    // allow to write to curVal
     if (lockHolders.empty()) {
-        // allow to write to curVal
         curVal[idx] = varVal;
         return true;
     }
