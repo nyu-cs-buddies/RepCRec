@@ -3,8 +3,8 @@
 #include <fstream>
 #include <list>
 
-#include "transactionManager.h"
-#include "operation.h"
+#include "transactionManager.hpp"
+#include "operation.hpp"
 using namespace std;
 
 class IOUtil {
@@ -74,7 +74,7 @@ class IOUtil {
 
 int main(int argc, char* argv[]) {
     if (argc != 2) {
-        cout << R"(The command must be like ./RepCRec ../input.txt)" << endl;
+        cout << "Usage: ./repcrec <input_file>" << endl;
         return 1;
     }
 

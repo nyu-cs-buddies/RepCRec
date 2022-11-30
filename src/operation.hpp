@@ -1,8 +1,8 @@
 #pragma once
-#include <iostream>
-using namespace std;
 
-enum struct Action {
+#include <iostream>
+
+enum class Action {
     READ = 1,
     WRITE,
     BEGIN,
@@ -13,50 +13,23 @@ enum struct Action {
     DUMP
 };
 
-struct Operation {
+class Operation {
+   public:
     Action action;
-    int transactionId = -1;
-    int varIdx = -1;
-    int val = -1;
-    int siteId = -1;
-    int timeStamp = 0;
+    int transactionId;
+    int varIdx;
+    int val;
+    int siteId;
+    int timeStamp;
+
+    Operation();
+    friend std::ostream& operator<<(std::ostream& os, const Action& action);
+    friend std::ostream& operator<<(std::ostream& os, const Operation& op);
 };
 
-inline ostream& operator<<(ostream& os, const Action& action) {
-    switch (action) {
-        case Action::READ:
-            os << "READ";
-            break;
-        case Action::WRITE:
-            os << "WRITE";
-            break;
-        case Action::BEGIN:
-            os << "BEGIN";
-            break;
-        case Action::BEGINRO:
-            os << "BEGINRO";
-            break;
-        case Action::END:
-            os << "END";
-            break;
-        case Action::RECOVER:
-            os << "RECOVER";
-            break;
-        case Action::FAIL:
-            os << "FAIL";
-            break;
-        case Action::DUMP:
-            os << "DUMP";
-            break;
-    }
-    return os;    
-}
+std::ostream& operator<<(std::ostream& os, const Action& action);
+std::ostream& operator<<(std::ostream& os, const Operation& op);
 
-inline ostream& operator<<(ostream& os, const Operation& op) {
-    os << "time: " << op.timeStamp << " Action: " << op.action << " transactionId: " << op.transactionId << " varIdx: " << op.varIdx
-    << " val: " << op.val << " siteId: " << op.siteId;
-    return os;
-}
 
 namespace {
     // R(T3,x4)

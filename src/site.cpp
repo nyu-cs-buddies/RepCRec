@@ -1,6 +1,6 @@
 #include <iostream>
 #include <string>
-#include "site.h"
+#include "site.hpp"
 using namespace std;
 
 Site::Site(const int id) : id(id), siteStatus(SiteStatus::UP) { initialize(); }

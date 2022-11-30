@@ -1,5 +1,5 @@
 #include <iostream>
-#include "lockManager.h"
+#include "lockManager.hpp"
 using namespace std;
 
 void LockManager::requestRLock(int transactionId, int varIdx, int& lockHolder){
