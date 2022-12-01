@@ -1,5 +1,7 @@
 #include "transaction.hpp"
 
+using namespace std;
+
 Transaction::Transaction(){};
 Transaction::Transaction(const int id, const int startTime,
                          const bool isReadOnly)
@@ -8,8 +10,7 @@ Transaction::Transaction(const int id, const int startTime,
       isReadOnly(isReadOnly),
       transactionStatus(TransactionStatus::RUNNING){};
 
-std::ostream &operator<<(std::ostream &os,
-                         const TransactionStatus &transactionStatus) {
+ostream &operator<<(ostream &os, const TransactionStatus &transactionStatus) {
     switch (transactionStatus) {
         case TransactionStatus::RUNNING:
             os << "RUNNING";
@@ -27,7 +28,7 @@ std::ostream &operator<<(std::ostream &os,
     return os;
 }
 
-std::ostream &operator<<(std::ostream &os, const Transaction tran) {
+ostream &operator<<(ostream &os, const Transaction tran) {
     os << "id: " << tran.id << " startTime: " << tran.startTime
        << " isReadOnly: " << tran.isReadOnly
        << " status: " << tran.transactionStatus;

@@ -3,10 +3,12 @@
 #include <algorithm>
 #include <unordered_set>
 
+using namespace std;
+
 namespace {
 
-bool dfs(std::unordered_map<int, std::list<int>> &waitForGraph,
-         std::unordered_set<int> &visited, int curNode, std::list<int> &path) {
+bool dfs(unordered_map<int, list<int>> &waitForGraph,
+         unordered_set<int> &visited, int curNode, list<int> &path) {
     path.push_back(curNode);
     if (visited.count(curNode)) {
         // find cycle
@@ -25,10 +27,9 @@ bool dfs(std::unordered_map<int, std::list<int>> &waitForGraph,
     return false;
 }
 
-bool hasCycle(std::unordered_map<int, std::list<int>> &waitForGraph,
-              std::list<int> &path) {
+bool hasCycle(unordered_map<int, list<int>> &waitForGraph, list<int> &path) {
     for (auto &n : waitForGraph) {
-        std::unordered_set<int> visited;
+        unordered_set<int> visited;
         if (dfs(waitForGraph, visited, n.first, path)) {
             return true;
         }
@@ -38,7 +39,7 @@ bool hasCycle(std::unordered_map<int, std::list<int>> &waitForGraph,
 }  // namespace
 
 TransactionManager::TransactionManager() : time(0){};
-TransactionManager::TransactionManager(const std::list<Operation> operations)
+TransactionManager::TransactionManager(const list<Operation> operations)
     : time(0), operations(operations){};
 
 void TransactionManager::simulate() {
@@ -85,22 +86,22 @@ void TransactionManager::simulate() {
 }
 
 void TransactionManager::detectDeadLock() {
-    std::list<int> path;  // store the path where we find a cycle
+    list<int> path;  // store the path where we find a cycle
     if (!hasCycle(waitForGraph, path)) {
         return;
     }
-    std::cout << "Deadlock happens!" << std::endl;
+    cout << "Deadlock happens!" << endl;
     // extract the path of the cycle
-    auto r = std::find(path.begin(), path.end(), path.back());
-    std::vector<int> pool(r, path.end());
+    auto r = find(path.begin(), path.end(), path.back());
+    vector<int> pool(r, path.end());
     pool.pop_back();  // remove the repeated one
     // find the youngest one
     int youngestTime = 0;
     int transactionToAbort = 0;
     for (const auto &id : pool) {
-        auto trans = idToTransaction[id];
-        if (trans.startTime > youngestTime) {
-            youngestTime = trans.startTime;
+        auto tran = idToTransaction[id];
+        if (tran.startTime > youngestTime) {
+            youngestTime = tran.startTime;
             transactionToAbort = id;
         }
     }
@@ -116,37 +117,33 @@ void TransactionManager::begin(const Operation &curOperation, bool isReadOnly) {
     }
     idToTransaction[transaction.id] = transaction;
     if (isReadOnly) {
-        std::cout << "T" << transaction.id << " begins, and it is read-only"
-                  << std::endl;
+        cout << "T" << transaction.id << " begins, and it is read-only" << endl;
     } else {
-        std::cout << "T" << transaction.id << " begins" << std::endl;
+        cout << "T" << transaction.id << " begins" << endl;
     }
 }
 
 void TransactionManager::read(const Operation &curOperation) {
-    if (idToTransaction[curOperation.transactionId].transactionStatus ==
+    auto curId = curOperation.transactionId;
+    if (idToTransaction[curId].transactionStatus ==
         TransactionStatus::ABORTED) {
         return;
     }
 
     // check if it is a read-only transaction
-    if (idToTransaction[curOperation.transactionId].isReadOnly) {
-        if (!idToTransaction[curOperation.transactionId].commitedValCopy.count(
+    if (idToTransaction[curId].isReadOnly) {
+        if (!idToTransaction[curId].commitedValCopy.count(
                 curOperation.varIdx)) {
-            std::cout << "T" << curOperation.transactionId << " can not read x"
-                      << curOperation.varIdx
-                      << " since there are no sites avaialbe. "
-                      << "T" << curOperation.transactionId << " aborts!"
-                      << std::endl;
-            idToTransaction[curOperation.transactionId].transactionStatus =
+            cout << "T" << curId << " can not read x" << curOperation.varIdx
+                 << " since there are no sites avaialbe. "
+                 << "T" << curId << " aborts!" << endl;
+            idToTransaction[curId].transactionStatus =
                 TransactionStatus::ABORTED;
             return;
         }
-        std::cout << "T" << curOperation.transactionId << " reads x"
-                  << curOperation.varIdx << ": "
-                  << idToTransaction[curOperation.transactionId]
-                         .commitedValCopy[curOperation.varIdx]
-                  << std::endl;
+        cout << "T" << curId << " reads x" << curOperation.varIdx << ": "
+             << idToTransaction[curId].commitedValCopy[curOperation.varIdx]
+             << endl;
         return;
     }
 
@@ -154,148 +151,139 @@ void TransactionManager::read(const Operation &curOperation) {
     int readVal = 0;
     bool isRead = false;
     for (auto &site : sites) {
-        isRead = isRead || site.read(curOperation.transactionId,
-                                     curOperation.varIdx, lockHolder, readVal);
+        if (!isRead) {
+            isRead = site.read(curId, curOperation.varIdx, lockHolder, readVal);
+        }
     }
 
     if (!isRead) {
         // all sites down
         siteFailedOperations.push_back(curOperation);
-        std::cout << "T" << curOperation.transactionId << " can not read x"
-                  << curOperation.varIdx
-                  << " since there are no sites avaialbe." << std::endl;
+        cout << "T" << curId << " can not read x" << curOperation.varIdx
+             << " since there are no sites avaialbe." << endl;
         return;
     }
 
-    if (lockHolder != -1 && lockHolder != curOperation.transactionId) {
+    if (lockHolder != -1 && lockHolder != curId) {
         // this operation is blocked
         blockedOperations.push_back(curOperation);
-        waitForGraph[lockHolder].push_back(curOperation.transactionId);
-        if (idToTransaction[curOperation.transactionId].transactionStatus ==
+        waitForGraph[lockHolder].push_back(curId);
+        if (idToTransaction[curId].transactionStatus ==
             TransactionStatus::RUNNING) {
-            idToTransaction[curOperation.transactionId].transactionStatus =
+            idToTransaction[curId].transactionStatus =
                 TransactionStatus::WAITING;
-            std::cout << "T" << curOperation.transactionId << " can not read x"
-                      << curOperation.varIdx << " since the lock conflicts"
-                      << std::endl;
+            cout << "T" << curId << " can not read x" << curOperation.varIdx
+                 << " since the lock conflicts" << endl;
         }
     } else {
-        idToTransaction[curOperation.transactionId].transactionStatus =
-            TransactionStatus::RUNNING;
-        std::cout << "T" << curOperation.transactionId << " reads x"
-                  << curOperation.varIdx << ": " << readVal << std::endl;
+        idToTransaction[curId].transactionStatus = TransactionStatus::RUNNING;
+        cout << "T" << curId << " reads x" << curOperation.varIdx << ": "
+             << readVal << endl;
         // update read history
-        idToTransaction[curOperation.transactionId]
-            .readHistory[curOperation.varIdx] = time;
+        idToTransaction[curId].readHistory[curOperation.varIdx] = time;
     }
     return;
 }
 
 void TransactionManager::write(const Operation &curOperation) {
-    if (idToTransaction[curOperation.transactionId].transactionStatus ==
+    auto curId = curOperation.transactionId;
+    if (idToTransaction[curId].transactionStatus ==
         TransactionStatus::ABORTED) {
         return;
     }
 
-    // check site available
-    std::unordered_set<int> lockHolders;
-    std::vector<int> affectedSiteIndexes;
+    // check site's availability
+    unordered_set<int> lockHolders;
+    vector<int> affectedSiteIndexes;
     for (size_t i = 0; i < 10; i++) {
-        if (sites[i].write(curOperation.transactionId, curOperation.varIdx,
-                           curOperation.val, lockHolders)) {
+        if (sites[i].write(curId, curOperation.varIdx, curOperation.val,
+                           lockHolders)) {
             affectedSiteIndexes.push_back(i + 1);
         }
     }
+
+    // if all sites down
     if (affectedSiteIndexes.empty() && lockHolders.empty()) {
-        // all sites down
         siteFailedOperations.push_back(curOperation);
-        std::cout << "T" << curOperation.transactionId << " can not write x"
-                  << curOperation.varIdx
-                  << " since there are no sites avaialbe." << std::endl;
+        cout << "T" << curId << " can not write x" << curOperation.varIdx
+             << " since there are no sites avaialbe." << endl;
         return;
     }
+
+    // if operation is blocked
     if (!lockHolders.empty()) {
-        // this operation is blocked
         blockedOperations.push_back(curOperation);
         for (const auto &lockHolder : lockHolders) {
-            if (lockHolder == curOperation.transactionId) {
+            if (lockHolder == curId) {
                 continue;
             }
 
-            waitForGraph[lockHolder].push_back(curOperation.transactionId);
+            waitForGraph[lockHolder].push_back(curId);
         }
-        if (idToTransaction[curOperation.transactionId].transactionStatus ==
+        if (idToTransaction[curId].transactionStatus ==
             TransactionStatus::RUNNING) {
-            idToTransaction[curOperation.transactionId].transactionStatus =
+            idToTransaction[curId].transactionStatus =
                 TransactionStatus::WAITING;
-            std::cout << "T" << curOperation.transactionId << " can not write x"
-                      << curOperation.varIdx << " since the lock conflicts"
-                      << std::endl;
+            cout << "T" << curId << " can not write x" << curOperation.varIdx
+                 << " since the lock conflicts" << endl;
         }
-    } else {
-        idToTransaction[curOperation.transactionId].transactionStatus =
-            TransactionStatus::RUNNING;
-        idToTransaction[curOperation.transactionId].affectedVariables.insert(
-            curOperation.varIdx);
-        std::cout << "T" << curOperation.transactionId << " writes x"
-                  << curOperation.varIdx << " as " << curOperation.val
-                  << ", and affected sites are ";
-        for (const auto &siteIndex : affectedSiteIndexes) {
-            std::cout << siteIndex << " ";
-        }
-        std::cout << std::endl;
-        // keep tracking uncommited variable
-        uncommitedVariable[curOperation.varIdx] = time;
-        // update write history
-        idToTransaction[curOperation.transactionId]
-            .writeHistory[curOperation.varIdx] = time;
+        return;
     }
+
+    // else
+    idToTransaction[curId].transactionStatus = TransactionStatus::RUNNING;
+    idToTransaction[curId].affectedVariables.insert(curOperation.varIdx);
+    cout << "T" << curId << " writes x" << curOperation.varIdx << " as "
+         << curOperation.val << ", and affected sites are ";
+    for (const auto &siteIndex : affectedSiteIndexes) {
+        cout << siteIndex << " ";
+    }
+    cout << endl;
+    // keep tracking uncommited variable
+    uncommitedVariable[curOperation.varIdx] = time;
+    // update write history
+    idToTransaction[curId].writeHistory[curOperation.varIdx] = time;
     return;
 }
 
 void TransactionManager::commit(const Operation &curOperation) {
-    if (idToTransaction[curOperation.transactionId].transactionStatus ==
+    auto curId = curOperation.transactionId;
+    if (idToTransaction[curId].transactionStatus ==
         TransactionStatus::ABORTED) {
-        abort(curOperation.transactionId);
+        abort(curId);
         return;
     }
-    // check every affected variables if they can commit
+    // check if affected variables can commit
     bool ableToCommit = true;
-    // check if sites with these variables are up
-    for (const auto &affectedVariable :
-         idToTransaction[curOperation.transactionId].affectedVariables) {
-        if (affectedVariable % 2 == 0) {
+    // check if sites are up
+    for (const auto &av : idToTransaction[curId].affectedVariables) {
+        if (av % 2 == 0) {
             for (const auto &site : sites) {
                 // if write time before fail
                 if (site.siteStatus == SiteStatus::DOWN &&
-                    site.curVal.count(affectedVariable)) {
+                    site.curVal.count(av)) {
                     ableToCommit = false;
                     break;
                 }
             }
-        } else if (sites[affectedVariable % 10].siteStatus ==
-                       SiteStatus::DOWN ||
-                   (sites[affectedVariable % 10].siteStatus == SiteStatus::UP &&
-                    !sites[affectedVariable % 10].curVal.count(
-                        affectedVariable))) {
+        } else if (sites[av % 10].siteStatus == SiteStatus::DOWN ||
+                   (sites[av % 10].siteStatus == SiteStatus::UP &&
+                    !sites[av % 10].curVal.count(av))) {
             // non-replicated variable
             ableToCommit = false;
         }
     }
     // check if there's write operations before a site failed
     for (const auto &site : sites) {
-        for (const auto &idx :
-             idToTransaction[curOperation.transactionId].affectedVariables) {
+        for (const auto &idx : idToTransaction[curId].affectedVariables) {
             if (site.restrictedWriteVariable.count(idx)) {
                 ableToCommit = false;
             }
-            if (idToTransaction[curOperation.transactionId].writeHistory[idx] <
-                site.failedTime) {
+            if (idToTransaction[curId].writeHistory[idx] < site.failedTime) {
                 ableToCommit = false;
             }
         }
-        for (const auto &e :
-             idToTransaction[curOperation.transactionId].readHistory) {
+        for (const auto &e : idToTransaction[curId].readHistory) {
             if (site.commitedVal.count(e.first) && time < site.failedTime) {
                 ableToCommit = false;
             }
@@ -305,7 +293,7 @@ void TransactionManager::commit(const Operation &curOperation) {
     // transaction
     auto it = siteFailedOperations.begin();
     while (it != siteFailedOperations.end()) {
-        if ((*it).transactionId == curOperation.transactionId) {
+        if ((*it).transactionId == curId) {
             ableToCommit = false;
             it = siteFailedOperations.erase(it);
         } else {
@@ -314,31 +302,27 @@ void TransactionManager::commit(const Operation &curOperation) {
     }
     // abort
     if (!ableToCommit) {
-        abort(curOperation.transactionId);
+        abort(curId);
         return;
     }
     // change curValue to commitedValue
     for (auto &site : sites) {
         if (site.siteStatus != SiteStatus::DOWN) {
-            site.commit(
-                curOperation.transactionId,
-                idToTransaction[curOperation.transactionId].affectedVariables);
+            site.commit(curId, idToTransaction[curId].affectedVariables);
         }
     }
-    idToTransaction[curOperation.transactionId].transactionStatus =
-        TransactionStatus::COMMITED;
-    std::cout << "T" << curOperation.transactionId << " commits!" << std::endl;
+    idToTransaction[curId].transactionStatus = TransactionStatus::COMMITED;
+    cout << "T" << curId << " commits!" << endl;
 
     // update uncommitedVarialbe
-    for (const auto &idx :
-         idToTransaction[curOperation.transactionId].affectedVariables) {
+    for (const auto &idx : idToTransaction[curId].affectedVariables) {
         uncommitedVariable.erase(idx);
     }
 
     // deal with operations which are blocked by this transaction
     // iterate each waiting transaction backward and push_front its related
     // blocked operations to the operations queue
-    auto blockedTrans = waitForGraph[curOperation.transactionId];
+    auto blockedTrans = waitForGraph[curId];
     for (auto i = blockedTrans.rbegin(); i != blockedTrans.rend(); i++) {
         for (auto j = blockedOperations.rbegin(); j != blockedOperations.rend();
              j++) {
@@ -347,46 +331,46 @@ void TransactionManager::commit(const Operation &curOperation) {
             }
         }
     }
-    std::unordered_set<int> blockedTransSet(blockedTrans.begin(),
-                                            blockedTrans.end());
+    unordered_set<int> blockedTransSet(blockedTrans.begin(),
+                                       blockedTrans.end());
     auto removeUnblockedTrans =
-        std::remove_if(blockedOperations.begin(), blockedOperations.end(),
-                       [&](const Operation &o) {
-                           return blockedTransSet.count(o.transactionId);
-                       });
+        remove_if(blockedOperations.begin(), blockedOperations.end(),
+                  [&](const Operation &o) {
+                      return blockedTransSet.count(o.transactionId);
+                  });
     blockedOperations.erase(removeUnblockedTrans, blockedOperations.end());
 
-    waitForGraph.erase(curOperation.transactionId);
+    waitForGraph.erase(curId);
 }
 
 void TransactionManager::fail(const Operation &curOperation) {
     if (sites[curOperation.siteId - 1].fail(time)) {
-        std::cout << "Site" << curOperation.siteId << " fails!" << std::endl;
+        cout << "Site" << curOperation.siteId << " fails!" << endl;
     }
 }
 
 void TransactionManager::recover(const Operation &curOperation) {
-    if (sites[curOperation.siteId - 1].recover()) {
-        std::cout << "Site" << curOperation.siteId << " recovers!" << std::endl;
+    auto curSid = curOperation.siteId;
+    if (sites[curSid - 1].recover()) {
+        cout << "Site" << curSid << " recovers!" << endl;
 
         // let this site knows there exists uncommited variables before it
         // failed
         for (const auto &e : uncommitedVariable) {
             // check if this happened before the site failed
-            if (e.second > sites[curOperation.siteId - 1].failedTime) {
+            if (e.second > sites[curSid - 1].failedTime) {
                 continue;
             }
-            if (sites[curOperation.siteId - 1].commitedVal.count(e.first)) {
-                sites[curOperation.siteId - 1].restrictedWriteVariable.insert(
-                    e.first);
+            if (sites[curSid - 1].commitedVal.count(e.first)) {
+                sites[curSid - 1].restrictedWriteVariable.insert(e.first);
             }
         }
 
         // check invalid read for replicated variables
         for (auto &e : idToTransaction) {
             for (const auto &v : e.second.readHistory) {
-                if (sites[curOperation.siteId - 1].commitedVal.count(v.first) &&
-                    v.second < sites[curOperation.siteId - 1].failedTime) {
+                if (sites[curSid - 1].commitedVal.count(v.first) &&
+                    v.second < sites[curSid - 1].failedTime) {
                     e.second.transactionStatus = TransactionStatus::ABORTED;
                 }
             }
@@ -413,9 +397,8 @@ void TransactionManager::abort(const int transactionToAbort) {
         }
     }
     idToTransaction.erase(transactionToAbort);
-    std::unordered_set<int> waitedTrans(
-        waitForGraph[transactionToAbort].begin(),
-        waitForGraph[transactionToAbort].end());
+    unordered_set<int> waitedTrans(waitForGraph[transactionToAbort].begin(),
+                                   waitForGraph[transactionToAbort].end());
     waitForGraph.erase(transactionToAbort);
     for (auto &e : waitForGraph) {
         e.second.remove(transactionToAbort);
@@ -429,16 +412,16 @@ void TransactionManager::abort(const int transactionToAbort) {
         }
     }
     auto removeUnblockedTrans =
-        std::remove_if(blockedOperations.begin(), blockedOperations.end(),
-                       [&](const Operation &o) {
-                           return o.transactionId == transactionToAbort ||
-                                  waitedTrans.count(o.transactionId);
-                       });
+        remove_if(blockedOperations.begin(), blockedOperations.end(),
+                  [&](const Operation &o) {
+                      return o.transactionId == transactionToAbort ||
+                             waitedTrans.count(o.transactionId);
+                  });
     blockedOperations.erase(removeUnblockedTrans, blockedOperations.end());
 
     idToTransaction[transactionToAbort].transactionStatus =
         TransactionStatus::ABORTED;
-    std::cout << "T" << transactionToAbort << " aborts!" << std::endl;
+    cout << "T" << transactionToAbort << " aborts!" << endl;
 
     // update waitForGraph
     for (auto i = waitForGraph.cbegin(); i != waitForGraph.cend();) {
@@ -453,20 +436,20 @@ void TransactionManager::abort(const int transactionToAbort) {
 }
 
 void TransactionManager::dumpDebug() {
-    std::cout << std::endl;
-    std::cout << "Blocked Transactions: ";
+    cout << endl;
+    cout << "Blocked Transactions: ";
     for (const auto &o : blockedOperations) {
-        std::cout << o << " ";
+        cout << o << " ";
     }
-    std::cout << std::endl;
+    cout << endl;
 
-    std::cout << "Wait for graph: " << std::endl;
+    cout << "Wait for graph: " << endl;
     for (const auto &[id, waits] : waitForGraph) {
-        std::cout << "TransId: " << id << ": ";
+        cout << "TransId: " << id << ": ";
         for (const auto &w : waits) {
-            std::cout << w << " ";
+            cout << w << " ";
         }
-        std::cout << std::endl;
+        cout << endl;
     }
 }
 
