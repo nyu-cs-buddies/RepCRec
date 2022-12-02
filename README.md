@@ -1,5 +1,5 @@
 # Documentation and Code Structure - RepCRec
-A term project for Advanced Database System (CSCI-GA.2434-001) in New York University, Fall 2022
+A term project for Advanced Database System (CSCI-GA.2434-001) at New York University, Fall 2022
 
 ## Team Members
 - Che-Hsien Chiu (cc7293@nyu.edu)
@@ -36,6 +36,21 @@ C++
   * `read()`, `write()`, `commit()`
   * `failed(cur_Time)`, `recover()`
 
+
+## How to build
+```bash
+mkdir build
+cd build
+# requires cmake-3 and gcc-12.2
+# module load cmake-3 gcc-12.2 # on NYU CIMS machines
+cmake ..
+make
+```
+
 ## Testing Scripts
-
-
+```bash
+# module load gcc-12.2 # on NYU CIMS machines
+cd .. # cd out of build/
+mkdir outputs
+./runit.sh
+```
