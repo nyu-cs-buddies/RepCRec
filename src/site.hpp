@@ -14,11 +14,11 @@ enum class SiteStatus { UP = 1, DOWN };
 class Site {
    private:
     int id;
+    LockManager lockManager;
 
    public:
     int failedTime = 0;
     SiteStatus siteStatus;
-    LockManager lockManager;
     map<Index, Value> commitedVal;
     map<Index, Value> curVal;
     unordered_set<int> restrictedReadVariable;
@@ -31,13 +31,14 @@ class Site {
               int& readVal);
     bool write(const int transactionId, const int idx, const int varVal,
                unordered_set<int>& lockHolders);
-    void abort(
-        const int transactionId);  // release lock from this transaction and
-                                   // rollback if the value is modified.
+    // release lock from this transaction and
+    // rollback if the value is modified.
+    void abort(const int transactionId);
     void commit(const int transactionId,
                 const unordered_set<int>& affectedVariables);
     bool fail(int time);
     bool recover();
+    void dumpDebug();
     void dump() const;
 
     friend ostream& operator<<(ostream& os, const SiteStatus& siteSatus);

@@ -120,6 +120,24 @@ bool Site::recover() {
     return true;
 }
 
+void Site::dumpDebug() {
+    cout << "============" << endl;
+    cout << "Current Val" << endl;
+    cout << "============" << endl;
+    string delim = "";
+    cout << "site " << id << " -";
+    for (const auto& [idx, val] : curVal) {
+      cout << delim << " x" << idx << ": " << val;
+      delim = ",";
+    }
+    cout << endl;
+    cout << "============" << endl;
+    cout << "LockTable" << endl;
+    cout << "============" << endl;
+    lockManager.dump();
+    cout << endl;
+}
+
 void Site::dump() const {
     string delim = "";
     cout << "Site " << id << " -";
@@ -129,22 +147,9 @@ void Site::dump() const {
     }
     cout << endl;
 
-    // debug purpose
-    // cout << "============" << endl;
-    // cout << "Current Val" << endl;
-    // cout << "============" << endl;
-    // delim = "";
-    // cout << "site " << id << " -";
-    // for (const auto& [idx, val] : curVal) {
-    //   cout << delim << " x" << idx << ": " << val;
-    //   delim = ",";
-    // }
-    // cout << endl;
-    // cout << "============" << endl;
-    // cout << "LockTable" << endl;
-    // cout << "============" << endl;
-    // lockManager.dump();
-    // cout << endl;
+#ifdef DEBUG
+    dumpDebug();
+#endif
 }
 
 ostream& operator<<(ostream& os, const SiteStatus& siteSatus) {
